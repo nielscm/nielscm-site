@@ -38,5 +38,33 @@
 } */
 
 #leaflet-map {
-  height: 400px;
+  height: 100vh;
+  width: 100%;
+}
+
+/* .feature-popup {
+  width: 160px;
+} */
+
+.feature-popup h3 {
+  padding: 2px 0;
+  margin: 0;
+}
+
+.feature-popup table, tbody {
+  width: 100%;
+}
+
+.feature-popup td {
+  padding: 2px 5px;
+  width: 50%;
+  border: 1px solid #ccc;
+}
+
+.feature-popup td:first-child {
+  padding: 2px 5px;
+  width: 50%;
+  color: #ddd;
+  background-color: #777;
+  border: 1px solid #777;
 }

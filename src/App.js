@@ -1,4 +1,4 @@
-import React from "react";
+import { React, useEffect, useState } from "react";
 import {
   BrowserRouter as Router,
   Switch,
@@ -6,9 +6,13 @@ import {
   Link
 } from "react-router-dom";
 
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
+import { GeoJSON, MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+
+import mapGeoJson from './resources/geodata/map.json';
 
 import './App.css';
+
+import { featureGroup, map } from "leaflet";
 
 export default function App() {
   return (
@@ -20,7 +24,7 @@ export default function App() {
               <Link to="/">Home</Link>
             </li>
             <li>
-              <Link to="/leaflet-map">Leaflet Map</Link>
+              <Link to="/react-leaflet-map">React Leaflet Map</Link>
             </li>
           </ul>
         </nav>
@@ -28,7 +32,7 @@ export default function App() {
         {/* A <Switch> looks through its children <Route>s and
             renders the first one that matches the current URL. */}
         <Switch>
-          <Route path="/leaflet-map">
+          <Route path="/react-leaflet-map">
             <LeafletMap />
           </Route>
           <Route path="/">
@@ -45,18 +49,66 @@ function Home() {
 }
 
 function LeafletMap() {
+  const latlng = [45.520, -122.625];
+  const zoom = 12;
+
+  const [activeFeature, setActiveFeature] = useState(null);
+  const [popupContent, setPopupContent] = useState('');
+
+  useEffect(() => {
+    // console.log('active', activeFeature)
+    if (activeFeature && activeFeature.geometry) {
+      // console.log('set here')
+      setPopupContent(<Popup
+        position={[
+          activeFeature.geometry.coordinates[1],
+          activeFeature.geometry.coordinates[0]
+        ]}
+        onClose={() => {
+          setActiveFeature(null);
+        }}
+      >
+        <div className='feature-popup'>
+          <h3>Properties</h3>
+          <table>
+            <tbody>
+            <tr><td>Fruit</td><td>{activeFeature.properties.fruit}</td></tr>
+            <tr><td>Vegetable</td><td>{activeFeature.properties.vegetable}</td></tr>
+            </tbody>
+          </table>
+        </div>
+    </Popup>)
+    } else {
+      // console.log('or here')
+      setPopupContent('')
+    }
+  }, [activeFeature]);
+
+  // useEffect(() => {
+  //   console.log(popupContent)
+  // }, [popupContent]);
+
   return (<div>
-      <h2>Leaflet Map</h2>
-      <MapContainer id='leaflet-map' center={[51.505, -0.09]} zoom={13} scrollWheelZoom={false}>
+      <MapContainer id='leaflet-map' center={latlng} zoom={zoom} scrollWheelZoom={false}>
       <TileLayer
         attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      <Marker position={[51.505, -0.09]}>
-        <Popup>
-          A pretty CSS3 popup. <br /> Easily customizable.
-        </Popup>
-      </Marker>
+      {mapGeoJson.features.map(f => (
+        <Marker
+          key={f.properties.fruit}
+          position={[
+            f.geometry.coordinates[1],
+            f.geometry.coordinates[0]
+          ]}
+          eventHandlers={{
+            'click' : () => {
+              setActiveFeature(f);
+            }
+          }}
+        />
+      ))}
+      {popupContent}
     </MapContainer>
   </div>);
 }
