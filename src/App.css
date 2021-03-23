@@ -28,6 +28,18 @@
   color: #61dafb;
 }
 
+.home {
+  padding: 30px;
+  background-color: #ddd;
+  height: 100vh;
+}
+
+ul.no-bullets {
+  list-style-type: none; /* Remove bullets */
+  padding: 0; /* Remove padding */
+  margin: 0; /* Remove margins */
+}
+
 /* @keyframes App-logo-spin {
   from {
     transform: rotate(0deg);

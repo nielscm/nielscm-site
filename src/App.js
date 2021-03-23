@@ -8,31 +8,21 @@ import {
 
 import { GeoJSON, MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 
-import mapGeoJson from './resources/geodata/map.json';
+import mapGeoJson from './resources/geodata/farmers-markets-2012.json';
 
 import './App.css';
 
 import { featureGroup, map } from "leaflet";
 
+console.log(mapGeoJson)
 export default function App() {
   return (
     <Router>
       <div>
-        <nav>
-          <ul>
-            <li>
-              <Link to="/">Home</Link>
-            </li>
-            <li>
-              <Link to="/react-leaflet-map">React Leaflet Map</Link>
-            </li>
-          </ul>
-        </nav>
-
         {/* A <Switch> looks through its children <Route>s and
             renders the first one that matches the current URL. */}
         <Switch>
-          <Route path="/react-leaflet-map">
+          <Route path="/farmers-markets">
             <LeafletMap />
           </Route>
           <Route path="/">
@@ -45,7 +35,45 @@ export default function App() {
 }
 
 function Home() {
-  return <h2>Home</h2>;
+  return (
+    <div className='home'>
+      <h2>Nielsen Demos</h2>
+      <nav>
+        <ul className='no-bullets'>
+          {/* <li>
+            <Link to="/">Demos Home</Link>
+          </li> */}
+          <li>
+            <Link to="/farmers-markets">Farmers Markets</Link>
+            <p>2012 Farmers Market Locations as GeoJSON displayed over Open Street Map in a React-Leaflet application</p>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  );
+}
+
+function PopupTemplate(props) {
+  const f = props.feature;
+  return (<div className='feature-popup'>
+  <h3>Farmers Market</h3>
+  <table>
+    <tbody>
+    <tr><td>Name</td><td><a target="_blank" href={'https://' + f.properties.website}>{f.properties.marketnam}</a></td></tr>
+    <tr><td>City</td><td>{f.properties.city}</td></tr>
+    <tr><td>County</td><td>{f.properties.county}</td></tr>
+    <tr><td>Location</td><td>{f.properties.location}</td></tr>
+    <tr><td>Days</td><td>{f.properties.days}</td></tr>
+    <tr><td>Hours</td><td>{f.properties.hours}</td></tr>
+    <tr><td>Season</td><td>{f.properties.season}</td></tr>
+    {(() => {
+      if (f.properties.started) {
+        return (<tr><td>Started</td><td>{f.properties.started}</td></tr>)
+      }
+    })()}
+    </tbody>
+  </table>
+</div>)
 }
 
 function LeafletMap() {
@@ -56,7 +84,7 @@ function LeafletMap() {
   const [popupContent, setPopupContent] = useState('');
 
   useEffect(() => {
-    // console.log('active', activeFeature)
+    console.log('active', activeFeature)
     if (activeFeature && activeFeature.geometry) {
       // console.log('set here')
       setPopupContent(<Popup
@@ -68,16 +96,8 @@ function LeafletMap() {
           setActiveFeature(null);
         }}
       >
-        <div className='feature-popup'>
-          <h3>Properties</h3>
-          <table>
-            <tbody>
-            <tr><td>Fruit</td><td>{activeFeature.properties.fruit}</td></tr>
-            <tr><td>Vegetable</td><td>{activeFeature.properties.vegetable}</td></tr>
-            </tbody>
-          </table>
-        </div>
-    </Popup>)
+        <PopupTemplate feature={activeFeature}/>
+      </Popup>)
     } else {
       // console.log('or here')
       setPopupContent('')
