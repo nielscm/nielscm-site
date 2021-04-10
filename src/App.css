@@ -80,3 +80,52 @@ ul.no-bullets {
   background-color: #777;
   border: 1px solid #777;
 }
+
+.fridge-popup {
+  padding: 0;
+  margin: 0;
+
+  max-width: 200px;
+}
+
+.fridge-popup p {
+  padding: 5px 0;
+  margin: 0;
+}
+
+.fridge-popup--title {
+  padding: 2px 0;
+  margin: 0;
+}
+
+.fridge-popup--title {
+  padding: 0;
+  margin: 0;
+}
+
+.fridge-popup--content {
+  padding: 0;
+  margin: 0;
+
+
+  /* background-color: coral; */
+  /* display: flex;
+  flex-direction: row; */
+}
+
+.fridge-popup--content ul {
+  padding: 0 30px;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.fridge-popup--content li {
+  margin: 5px 0;
+}
+
+/* .fridge-popup--content button {
+  background-color: #61dafb;
+
+  padding: 5px;
+  margin: 5px;
+} */

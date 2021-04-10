@@ -6,15 +6,19 @@ import {
   Link
 } from "react-router-dom";
 
-import { GeoJSON, MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-
-import mapGeoJson from './resources/geodata/farmers-markets-2012.json';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 
 import './App.css';
 
-import { featureGroup, map } from "leaflet";
+import mapGeoJson from './resources/geodata/farmers-markets-2012.json';
 
-console.log(mapGeoJson)
+import Amplify from "aws-amplify";
+import awsExports from "./aws-exports";
+import GraphQLAPI, { GRAPHQL_AUTH_MODE } from '@aws-amplify/api-graphql';
+import * as queries from "./graphql/queries";
+
+Amplify.configure(awsExports);
+
 export default function App() {
   return (
     <Router>
@@ -23,7 +27,10 @@ export default function App() {
             renders the first one that matches the current URL. */}
         <Switch>
           <Route path="/farmers-markets">
-            <LeafletMap />
+            <MarketLeafletMap />
+          </Route>
+          <Route path="/pdx-free-fridge">
+            <FridgeLeafletMap />
           </Route>
           <Route path="/">
             <Home />
@@ -40,9 +47,10 @@ function Home() {
       <h2>Nielsen Demos</h2>
       <nav>
         <ul className='no-bullets'>
-          {/* <li>
-            <Link to="/">Demos Home</Link>
-          </li> */}
+          <li>
+            <Link to="/pdx-free-fridge">PDX Free Fridge</Link>
+            <p>PDX Free Fridge GeoJSON from AWS AppSync and MongDB Atlas displayed over Open Street Map</p>
+          </li>
           <li>
             <Link to="/farmers-markets">Farmers Markets</Link>
             <p>2012 Farmers Market Locations as GeoJSON displayed over Open Street Map in a React-Leaflet application</p>
@@ -53,7 +61,14 @@ function Home() {
   );
 }
 
-function PopupTemplate(props) {
+/*******
+ * 
+ *  MARKETS DEMO
+ * 
+ */
+
+
+function MarketPopupTemplate(props) {
   const f = props.feature;
   return (<div className='feature-popup'>
   <h3>Farmers Market</h3>
@@ -76,15 +91,17 @@ function PopupTemplate(props) {
 </div>)
 }
 
-function LeafletMap() {
+
+function MarketLeafletMap() {
   const latlng = [45.520, -122.625];
   const zoom = 12;
 
   const [activeFeature, setActiveFeature] = useState(null);
   const [popupContent, setPopupContent] = useState('');
+  const [features, setFeatures] = useState();
 
   useEffect(() => {
-    console.log('active', activeFeature)
+    // console.log('active', activeFeature)
     if (activeFeature && activeFeature.geometry) {
       // console.log('set here')
       setPopupContent(<Popup
@@ -96,7 +113,7 @@ function LeafletMap() {
           setActiveFeature(null);
         }}
       >
-        <PopupTemplate feature={activeFeature}/>
+        <MarketPopupTemplate feature={activeFeature}/>
       </Popup>)
     } else {
       // console.log('or here')
@@ -104,19 +121,16 @@ function LeafletMap() {
     }
   }, [activeFeature]);
 
-  // useEffect(() => {
-  //   console.log(popupContent)
-  // }, [popupContent]);
-
   return (<div>
       <MapContainer id='leaflet-map' center={latlng} zoom={zoom} scrollWheelZoom={false}>
       <TileLayer
         attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      {mapGeoJson.features.map(f => (
+      {/* { console.log(features )} */}
+      {(mapGeoJson) ? mapGeoJson.features.map(f => (
         <Marker
-          key={f.properties.fruit}
+          key={f.properties.id}
           position={[
             f.geometry.coordinates[1],
             f.geometry.coordinates[0]
@@ -127,7 +141,123 @@ function LeafletMap() {
             }
           }}
         />
-      ))}
+      )) : undefined }
+      {popupContent}
+    </MapContainer>
+  </div>);
+}
+
+/*******
+ * 
+ *  FRIDGE DEMO
+ * 
+ */
+
+function FridgePopupTemplate(props) {
+  const f = props.feature;
+  // console.log('props', props)
+  return (<div className='fridge-popup'>
+  <h3 className='fridge-popup--title'>{f.location_name}</h3>
+  <p className='fridge-popup--desc'>{f.cross_streets}</p>
+  <div className='fridge-popup--content'>
+    <ul>
+    {(() => {
+        if (f.fridge === 'Yes') {
+          const type = (f.fridge_type) ? f.fridge_type : '';
+          // console.log('type', type, f)
+          return (<li>{type} Fridge</li>)
+        }
+    })()}
+    {(() => {
+      if (f.pantry === 'Yes') {
+        return (<li>Pantry</li>)
+      }
+    })()}
+    {(() => {
+      if (f.freezer === 'Yes') {
+        return (<li>Freezer</li>)
+      }
+    })()}
+    {(() => {
+      if (f.additions && f.additions.length && f.additions.length > 0) {
+        return (<li>{f.additions}</li>)
+      }
+    })()}
+    </ul>
+  </div>
+</div>)
+}
+
+function FridgeLeafletMap() {
+  const latlng = [45.520, -122.675];
+  const zoom = 10;
+
+  const [activeFeature, setActiveFeature] = useState(null);
+  const [popupContent, setPopupContent] = useState('');
+  const [features, setFeatures] = useState();
+
+  useEffect(() => {
+    // console.log('active', activeFeature)
+    if (activeFeature && activeFeature.geometry) {
+      // console.log('set here')
+      setPopupContent(<Popup
+        position={[
+          activeFeature.geometry.coordinates[1],
+          activeFeature.geometry.coordinates[0]
+        ]}
+        onClose={() => {
+          setActiveFeature(null);
+        }}
+      >
+        <FridgePopupTemplate feature={activeFeature}/>
+      </Popup>)
+    } else {
+      // console.log('or here')
+      setPopupContent('')
+    }
+  }, [activeFeature]);
+
+  useEffect(() => {
+    // console.log('use effects')
+    const fetchData = async () => {
+      try {
+        const response = await GraphQLAPI.graphql({
+          query: queries.getLocations,
+          authMode: GRAPHQL_AUTH_MODE.API_KEY
+        })
+        // console.log('response', response)
+        const f = response.data.getLocations;
+        // console.log(f)
+        setFeatures(f)
+      } catch (error) {
+        console.error('error', error);
+      }
+    };
+
+    fetchData();
+  },[]);
+
+  return (<div>
+      <MapContainer id='leaflet-map' center={latlng} zoom={zoom} scrollWheelZoom={false}>
+      <TileLayer
+        attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      />
+      {/* { console.log('features', features )} */}
+      {(features) ? features.map( f => (
+        <Marker
+          key={f.id}
+          position={[
+            f.geometry.coordinates[1],
+            f.geometry.coordinates[0]
+          ]}
+          eventHandlers={{
+            'click' : () => {
+              setActiveFeature(f);
+            }
+          }}
+        />
+      )) : undefined }
       {popupContent}
     </MapContainer>
   </div>);
